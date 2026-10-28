@@ -78,39 +78,72 @@
     <p id="status" role="status" aria-live="polite"></p>
   </main>
 
-  <script>
+ <script>
     const form = document.getElementById("contactForm");
     const status = document.getElementById("status");
     const button = form.querySelector("button");
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
+      status.textContent = "";
+      status.className = "";
+
+      const nameInput = document.getElementById("name");
+      const emailInput = document.getElementById("email");
+      const phoneInput = document.getElementById("phone");
+
+      // Validate Name
+      if (!nameInput.value.trim()) {
+        status.className = "status-error";
+        status.textContent = "Please enter your full name.";
+        nameInput.focus();
+        return;
+      }
+
+      // Validate Email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailInput.value.trim() || !emailRegex.test(emailInput.value.trim())) {
+        status.className = "status-error";
+        status.textContent = "Please enter a valid email address (e.g., name@example.com).";
+        emailInput.focus();
+        return;
+      }
+
       button.disabled = true;
       status.textContent = "Submitting...";
 
       try {
-        const data = Object.fromEntries(new FormData(form));
+        const payload = {
+          name: nameInput.value.trim(),
+          email: emailInput.value.trim(),
+          phone: phoneInput.value.trim()
+        };
 
         const response = await fetch("/api/submit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
+          body: JSON.stringify(payload)
         });
 
-        const result = await response.json();
+        // Safely parse JSON response to prevent unexpected syntax errors
+        const text = await response.text();
+        let result;
+        try {
+          result = JSON.parse(text);
+        } catch (e) {
+          throw new Error("Received an invalid response from the server.");
+        }
 
         if (!response.ok || !result.success) {
           throw new Error(result.message || "Submission failed.");
         }
 
-        status.textContent =
-          result.message +
-          (result.requestId ? " Request ID: " + result.requestId : "");
-
+        status.className = "status-success";
+        status.textContent = result.message + (result.requestId ? " (Request ID: " + result.requestId + ")" : "");
         form.reset();
       } catch (error) {
-        status.textContent = error.message ||
-          "Something went wrong. Please try again.";
+        status.className = "status-error";
+        status.textContent = error.message || "Something went wrong. Please try again.";
       } finally {
         button.disabled = false;
       }
