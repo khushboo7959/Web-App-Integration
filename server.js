@@ -38,14 +38,14 @@ app.get("/api/auth/login", (req, res) => {
     `?response_type=code` +
     `&client_id=${encodeURIComponent(process.env.SFMC_CLIENT_ID)}` +
     `&redirect_uri=${encodeURIComponent(process.env.SFMC_REDIRECT_URI)}` +
-    `&scope=${encodeURIComponent(process.env.SFMC_SCOPE || "email_read email_write")}` +
+    `&scope=${encodeURIComponent(process.env.SFMC_SCOPE || "email_read email_write data_extensions_write")}` +
     `&state=mystate`;
 
   res.redirect(authUrl);
 });
 
-// 2. Step two of Auth: Handle the callback code and exchange for tokens
-app.get("/api/auth/callback", async (req, res) => {
+// 2. Step two of Auth: Handle the callback code at /secondpage and exchange for tokens
+app.get("/secondpage", async (req, res) => {
   const { code, error } = req.query;
 
   if (error) {
@@ -81,7 +81,7 @@ app.get("/api/auth/callback", async (req, res) => {
     cachedRefreshToken = data.refresh_token || cachedRefreshToken;
     tokenExpiresAt = Date.now() + Math.max(0, (data.expires_in || 1080) - 120) * 1000;
 
-    // Redirect user back to home or success dashboard page
+    // Redirect user back to home page with success flag
     return res.redirect("/?auth=success");
   } catch (err) {
     console.error("Callback error:", err.message);
